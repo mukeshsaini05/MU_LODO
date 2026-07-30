@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dices } from 'lucide-react';
+import { playDiceRollSound } from '../logic/audio';
 
-const Dice = ({ onRoll, value, disabled, currentPlayer }) => {
+const Dice = ({ onRoll, value, disabled, currentPlayer, soundEnabled = true }) => {
   const [rolling, setRolling] = useState(false);
 
   const handleRoll = () => {
     if (disabled || rolling) return;
     setRolling(true);
+    playDiceRollSound(soundEnabled);
     
-    // Simulate roll animation
     setTimeout(() => {
       setRolling(false);
       onRoll();
-    }, 500);
+    }, 550);
   };
 
   const getDiceDots = (val) => {
@@ -28,19 +29,21 @@ const Dice = ({ onRoll, value, disabled, currentPlayer }) => {
   };
 
   return (
-    <div className={`dice-container ${currentPlayer}`}>
-      <button 
-        className={`dice ${rolling ? 'rolling' : ''} ${disabled ? 'disabled' : ''}`}
-        onClick={handleRoll}
-        disabled={disabled}
-      >
-        {value && !rolling ? (
-          getDiceDots(value)
-        ) : (
-          <Dices size={32} />
-        )}
-      </button>
-      <div className="dice-shadow"></div>
+    <div className={`dice-wrapper-ref ${currentPlayer}`}>
+      <div className={`dice-container ${currentPlayer}`}>
+        <button 
+          className={`dice ${rolling ? 'rolling' : ''} ${disabled ? 'disabled' : ''}`}
+          onClick={handleRoll}
+          disabled={disabled}
+        >
+          {value && !rolling ? (
+            getDiceDots(value)
+          ) : (
+            getDiceDots(5)
+          )}
+        </button>
+      </div>
+      <span className="dice-roll-label">Roll Dice</span>
     </div>
   );
 };

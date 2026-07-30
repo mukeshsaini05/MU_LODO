@@ -43,7 +43,7 @@ export const INITIAL_STATE = {
       { id: 'b4', position: -1, isHome: false, isReturning: false }
     ]
   },
-  logs: ['Game started. Red player\'s turn.']
+  logs: ['Player 1\'s turn.']
 };
 
 export const gameReducer = (state, action) => {
@@ -59,13 +59,14 @@ export const gameReducer = (state, action) => {
         activePlayers = [COLORS.RED, COLORS.GREEN, COLORS.YELLOW, COLORS.BLUE];
       }
 
+      const p1Name = action.payload.playerNames ? action.payload.playerNames[COLORS.RED] : 'Player 1';
       return {
         ...INITIAL_STATE,
         gameStarted: true,
         isOnline: false,
         players: activePlayers,
         playerNames: action.payload.playerNames || INITIAL_STATE.playerNames,
-        logs: [`Local game started with ${playerCount} players. ${action.payload.playerNames ? action.payload.playerNames[COLORS.RED] : 'Red player'}'s turn.`],
+        logs: [`${p1Name}'s turn.`],
       };
     }
     case 'LOBBY_START_GAME': {
@@ -76,6 +77,7 @@ export const gameReducer = (state, action) => {
       else if (playersCount === 3) activePlayers = [COLORS.RED, COLORS.GREEN, COLORS.YELLOW];
       else activePlayers = [COLORS.RED, COLORS.GREEN, COLORS.YELLOW, COLORS.BLUE];
       
+      const p1Name = playerNames ? playerNames[COLORS.RED] : 'Player 1';
       return {
         ...INITIAL_STATE,
         gameStarted: true,
@@ -84,8 +86,8 @@ export const gameReducer = (state, action) => {
         roomId,
         players: activePlayers,
         playerNames: playerNames || INITIAL_STATE.playerNames,
-        myColor, // New property to track the exact color this client controls
-        logs: [`Online game started with ${playersCount} players. You are ${playerNames ? playerNames[myColor] : myColor}.`],
+        myColor,
+        logs: [`${p1Name}'s turn.`],
       };
     }
     case 'UPDATE_PLAYER_NAMES': {
@@ -120,13 +122,16 @@ export const gameReducer = (state, action) => {
       }
 
       if (!hasValidMove) {
-        // Next turn immediately
+        // Next turn immediately without 'no valid moves' log clutter
+        const nextTurn = (state.turnIndex + 1) % state.players.length;
+        const nextPlayer = state.players[nextTurn];
+        const nextName = state.playerNames[nextPlayer] || nextPlayer;
         return {
           ...state,
           diceValue: value,
           diceRolled: false,
-          turnIndex: (state.turnIndex + 1) % state.players.length,
-          logs: [...state.logs, `${currentPlayer} rolled a ${value} but has no valid moves.`]
+          turnIndex: nextTurn,
+          logs: [...state.logs, `${nextName}'s turn.`]
         };
       }
 

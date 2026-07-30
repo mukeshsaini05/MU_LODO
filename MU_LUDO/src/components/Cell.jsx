@@ -1,75 +1,109 @@
 import React from 'react';
-import { COLORS, SAFE_ZONES, OUTER_PATH, START_POSITIONS } from '../logic/constants';
+import { COLORS, SAFE_ZONES, START_POSITIONS } from '../logic/constants';
 import { Star } from 'lucide-react';
-import Token from './Token';
 
-const Cell = ({ x, y, tokens = [] }) => {
+const Cell = ({ x, y }) => {
   let cellClass = 'ludo-cell ';
-  let cellColor = null;
-  let isSafe = false;
+  let innerCircleColor = null;
 
-  // Determine cell type and color
-  // Home zones (6x6 corner grids)
+  // Inner 4x4 white square bounds inside 6x6 home bases
+  const isInnerRedBox = x >= 1 && x <= 4 && y >= 1 && y <= 4;
+  const isInnerGreenBox = x >= 10 && x <= 13 && y >= 1 && y <= 4;
+  const isInnerYellowBox = x >= 10 && x <= 13 && y >= 10 && y <= 13;
+  const isInnerBlueBox = x >= 1 && x <= 4 && y >= 10 && y <= 13;
+
+  // Token start circles inside white base boxes
+  const isRedStart = START_POSITIONS[COLORS.RED].some(p => p.x === x && p.y === y);
+  const isGreenStart = START_POSITIONS[COLORS.GREEN].some(p => p.x === x && p.y === y);
+  const isYellowStart = START_POSITIONS[COLORS.YELLOW].some(p => p.x === x && p.y === y);
+  const isBlueStart = START_POSITIONS[COLORS.BLUE].some(p => p.x === x && p.y === y);
+
+  // 1. Home Base Corner Quadrants (6x6)
   if (x >= 0 && x <= 5 && y >= 0 && y <= 5) {
-    cellClass += 'home-zone red-home ';
-    cellColor = COLORS.RED;
+    if (isInnerRedBox) {
+      cellClass += 'base-inner-white ';
+      if (isRedStart) innerCircleColor = COLORS.RED;
+    } else {
+      cellClass += 'red-base-bg ';
+    }
   } else if (x >= 9 && x <= 14 && y >= 0 && y <= 5) {
-    cellClass += 'home-zone green-home ';
-    cellColor = COLORS.GREEN;
+    if (isInnerGreenBox) {
+      cellClass += 'base-inner-white ';
+      if (isGreenStart) innerCircleColor = COLORS.GREEN;
+    } else {
+      cellClass += 'green-base-bg ';
+    }
   } else if (x >= 9 && x <= 14 && y >= 9 && y <= 14) {
-    cellClass += 'home-zone yellow-home ';
-    cellColor = COLORS.YELLOW;
+    if (isInnerYellowBox) {
+      cellClass += 'base-inner-white ';
+      if (isYellowStart) innerCircleColor = COLORS.YELLOW;
+    } else {
+      cellClass += 'yellow-base-bg ';
+    }
   } else if (x >= 0 && x <= 5 && y >= 9 && y <= 14) {
-    cellClass += 'home-zone blue-home ';
-    cellColor = COLORS.BLUE;
+    if (isInnerBlueBox) {
+      cellClass += 'base-inner-white ';
+      if (isBlueStart) innerCircleColor = COLORS.BLUE;
+    } else {
+      cellClass += 'blue-base-bg ';
+    }
   } 
-  // Center Home
+  // 2. Center 3x3 Home Area
   else if (x >= 6 && x <= 8 && y >= 6 && y <= 8) {
     cellClass += 'center-home ';
-    if (x === 6 && y === 7) cellClass += 'red-path';
-    if (x === 7 && y === 6) cellClass += 'green-path';
-    if (x === 8 && y === 7) cellClass += 'yellow-path';
-    if (x === 7 && y === 8) cellClass += 'blue-path';
   }
+  // 3. Path Tracks
   else {
-    // Paths
-    const isOuterPath = OUTER_PATH.some(p => p.x === x && p.y === y);
-    isSafe = SAFE_ZONES.some(p => p.x === x && p.y === y);
+    cellClass += 'path-cell ';
     
-    if (isOuterPath || isSafe) {
-      cellClass += 'path-cell ';
-      if (isSafe) {
-        cellClass += 'safe-cell ';
-      }
-      
-      // Starting colored cells
-      if (x === 1 && y === 6) cellClass += 'red-path ';
-      if (x === 8 && y === 1) cellClass += 'green-path ';
-      if (x === 13 && y === 8) cellClass += 'yellow-path ';
-      if (x === 6 && y === 13) cellClass += 'blue-path ';
+    // Red Path home stretch
+    if ((x >= 1 && x <= 5 && y === 7)) {
+      cellClass += 'red-path-cell ';
     }
-    
-    // Home stretches
-    if (x >= 1 && x <= 5 && y === 7) cellClass += 'red-path path-cell ';
-    if (x === 7 && y >= 1 && y <= 5) cellClass += 'green-path path-cell ';
-    if (x >= 9 && x <= 13 && y === 7) cellClass += 'yellow-path path-cell ';
-    if (x === 7 && y >= 9 && y <= 13) cellClass += 'blue-path path-cell ';
+    // Green Path home stretch
+    else if ((x === 7 && y >= 1 && y <= 5)) {
+      cellClass += 'green-path-cell ';
+    }
+    // Yellow Path home stretch
+    else if ((x >= 9 && x <= 13 && y === 7)) {
+      cellClass += 'yellow-path-cell ';
+    }
+    // Blue Path home stretch
+    else if ((x === 7 && y >= 9 && y <= 13)) {
+      cellClass += 'blue-path-cell ';
+    }
+
+    // Safe Star Spots
+    const isSafe = SAFE_ZONES.some(p => p.x === x && p.y === y);
+    if (isSafe) {
+      cellClass += 'safe-cell ';
+    }
   }
 
-  // Determine if it's a token starting position
-  const isStartPos = 
-    START_POSITIONS[COLORS.RED].some(p => p.x === x && p.y === y) ||
-    START_POSITIONS[COLORS.GREEN].some(p => p.x === x && p.y === y) ||
-    START_POSITIONS[COLORS.YELLOW].some(p => p.x === x && p.y === y) ||
-    START_POSITIONS[COLORS.BLUE].some(p => p.x === x && p.y === y);
-    
-  if (isStartPos) {
-      cellClass += 'start-pos-cell ';
-  }
+  const isSafeSpot = SAFE_ZONES.some(p => p.x === x && p.y === y);
+
+  // Colored star mapping for start positions
+  const getStarColorProps = () => {
+    if (x === 1 && y === 6) return { color: '#ef4444', fill: '#ef4444' }; // Red start
+    if (x === 8 && y === 1) return { color: '#22c55e', fill: '#22c55e' }; // Green start
+    if (x === 13 && y === 8) return { color: '#f59e0b', fill: '#f59e0b' }; // Yellow start
+    if (x === 6 && y === 13) return { color: '#3b82f6', fill: '#3b82f6' }; // Blue start
+    return { color: '#94a3b8', fill: '#94a3b8' }; // Gray star for standard safe spots
+  };
+
+  const starProps = isSafeSpot ? getStarColorProps() : null;
 
   return (
     <div className={cellClass} style={{ gridColumn: x + 1, gridRow: y + 1 }}>
-      {isSafe && <Star className="safe-star" size={20} />}
+      {innerCircleColor && <div className={`base-token-spot spot-${innerCircleColor}`}></div>}
+      {isSafeSpot && !innerCircleColor && (
+        <Star 
+          className="safe-star" 
+          size={16} 
+          color={starProps.color} 
+          fill={starProps.fill} 
+        />
+      )}
     </div>
   );
 };

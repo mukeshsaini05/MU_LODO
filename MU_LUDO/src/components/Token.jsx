@@ -1,5 +1,5 @@
 import React from 'react';
-import { COLORS } from '../logic/constants';
+import { Star } from 'lucide-react';
 
 const Token = ({ color, id, index, total, x, y, onClick }) => {
   let tokenClass = `ludo-token token-${color} `;
@@ -13,15 +13,17 @@ const Token = ({ color, id, index, total, x, y, onClick }) => {
   // Logic to handle multiple tokens in the same cell
   if (total > 1) {
     const angle = (2 * Math.PI * index) / total;
-    const radius = 6; // px displacement
-    style.transform = `translate(calc(-50% + ${Math.cos(angle) * radius}px), calc(-50% + ${Math.sin(angle) * radius}px)) scale(0.8)`;
+    const radius = 7; // px displacement
+    style.transform = `translate(calc(-50% + ${Math.cos(angle) * radius}px), calc(-50% + ${Math.sin(angle) * radius}px)) scale(0.85)`;
   } else {
     style.transform = `translate(-50%, -50%)`;
   }
 
   return (
     <div className={tokenClass} style={style} onClick={onClick}>
-      <div className="token-inner"></div>
+      <div className="token-inner">
+        <Star size={11} fill="rgba(255, 255, 255, 0.9)" color="rgba(255, 255, 255, 0.9)" className="token-star-icon" />
+      </div>
     </div>
   );
 };
