@@ -2142,13 +2142,14 @@ body {
   }
 
   .game-screen-wrapper {
-    padding: 15px 10px 0.2rem 10px;
-    gap: 0.15rem;
+    padding: 8px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px;
+    gap: 0.1rem;
     width: 100%;
     height: 100%;
     max-height: 100dvh;
     overflow: hidden !important;
-    justify-content: flex-start;
+    justify-content: space-between;
+    align-items: center;
     box-sizing: border-box;
   }
 
@@ -2164,8 +2165,8 @@ body {
   }
 
   .exit-dashboard-btn-ref {
-    padding: 0.25rem 0.55rem;
-    font-size: 0.7rem;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.68rem;
     font-weight: 400 !important;
     border-radius: 10px;
     flex-shrink: 0;
@@ -2175,7 +2176,7 @@ body {
     width: auto;
     order: 2;
     justify-content: center;
-    padding: 0.2rem 0.55rem;
+    padding: 0.18rem 0.5rem;
     margin-top: 0;
     border-radius: 10px;
     gap: 0.25rem;
@@ -2224,10 +2225,12 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto auto;
-    gap: 0.1rem 0.35rem; /* Ultra tight 1px-2px gap above & below board */
+    gap: 0.1rem 0.3rem; /* Ultra tight 1px gap above & below board */
     width: 100%;
     margin: 0;
     align-items: center;
+    flex: 1;
+    justify-content: center;
   }
 
   .players-col.col-left, .players-col.col-right {
@@ -2267,8 +2270,8 @@ body {
 
   /* COMPACT MOBILE PLAYER CARDS */
   .player-card-ref {
-    padding: 0.28rem 0.45rem;
-    border-radius: 10px;
+    padding: 0.22rem 0.4rem;
+    border-radius: 9px;
     gap: 0.1rem;
   }
 
@@ -2294,16 +2297,16 @@ body {
   }
 
   .card-top-row {
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .card-avatar {
-    width: 25px;
-    height: 25px;
+    width: 23px;
+    height: 23px;
   }
 
   .card-player-name {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
   }
 
   .card-player-color {
@@ -2311,8 +2314,8 @@ body {
   }
 
   .card-hearts-row {
-    gap: 0.12rem;
-    margin-top: 0.02rem;
+    gap: 0.1rem;
+    margin-top: 0.01rem;
   }
 
   .card-status-row {
@@ -2380,7 +2383,7 @@ body {
   }
 
   .ludo-board {
-    --cell-size: min(calc((100vw - 28px) / 15), calc((100dvh - 235px) / 15));
+    --cell-size: min(calc((100vw - 20px) / 15), calc((100dvh - 275px) / 15));
     width: calc(var(--cell-size) * 15);
     height: calc(var(--cell-size) * 15);
     border-radius: 8px;
@@ -2390,33 +2393,34 @@ body {
   .game-bottom-bar-ref {
     width: 100%;
     padding-top: 0.1rem;
-    padding-bottom: 0.1rem;
+    padding-bottom: 0.2rem;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .bottom-left-tools, .bottom-right-tools {
-    gap: 0.45rem;
+    gap: 0.4rem;
   }
 
   /* SHIFT EMOJI RIGHT BY 15PX AND FRIENDS LEFT BY 15PX ON MOBILE */
   .bottom-left-tools .tool-btn-group:nth-child(2) {
-    transform: translateX(15px);
+    transform: translateX(12px);
   }
 
   .bottom-right-tools .tool-btn-group:nth-child(1) {
-    transform: translateX(-15px);
+    transform: translateX(-12px);
   }
 
   .circular-tool-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   .tool-label {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
   }
 
   .bottom-middle-controls {
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
 
   .pill-mode-btn {
@@ -2424,13 +2428,13 @@ body {
   }
 
   .dice {
-    width: 54px;
-    height: 54px;
-    border-radius: 13px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
   }
 
   .dice-roll-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
   }
 
   /* MOBILE DICE DOTS FIX - PERFECT 6-DOT SPACING */
