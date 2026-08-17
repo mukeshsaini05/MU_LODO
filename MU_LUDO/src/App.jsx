@@ -9,9 +9,13 @@ import { COLORS } from './logic/constants';
 import { createRoom, joinRoom, generateRoomId, startVoiceChat, stopVoiceChat } from './logic/network';
 import { 
   ArrowLeft, Clock, Users, Volume2, VolumeX, Music, Settings, 
-  MessageSquare, Smile, Zap, Mic, MicOff, Dices, Sparkles
+  MessageSquare, Smile, Zap, Mic, MicOff, Dices, Sparkles, Palette, BarChart2
 } from 'lucide-react';
-import { playTokenMoveSound } from './logic/audio';
+import { 
+  playTokenMoveSound, playDiceRollSound, playCaptureSound, 
+  playVictorySound, playTimerWarningSound, playSixRollSound 
+} from './logic/audio';
+import { getBestBotMove } from './logic/botAI';
 
 function App() {
   const [gameState, dispatch] = useReducer(gameReducer, INITIAL_STATE);
@@ -23,6 +27,17 @@ function App() {
   const [autoMove, setAutoMove] = useState(false);
   const [fastMode, setFastMode] = useState(false);
   const [matchSeconds, setMatchSeconds] = useState(0);
+  const [turnSecondsLeft, setTurnSecondsLeft] = useState(15);
+  const [boardTheme, setBoardTheme] = useState('neon'); // 'neon' | 'wooden' | 'royal'
+
+  // Bot & Custom Rule States
+  const [isBotMap, setIsBotMap] = useState({
+    [COLORS.RED]: false,
+    [COLORS.GREEN]: false,
+    [COLORS.YELLOW]: false,
+    [COLORS.BLUE]: false
+  });
+  const [requireKill, setRequireKill] = useState(false);
 
   // Bottom 4 Options States
   const [activeModal, setActiveModal] = useState(null); // 'chat' | 'emoji' | 'friends' | null
@@ -76,22 +91,103 @@ function App() {
     }
   };
 
+  const currentPlayer = gameState.players[gameState.turnIndex];
+  const isReturning = Object.values(gameState.tokens).some(tokens => tokens.some(t => t.isReturning));
+
+  // 15-SECOND TURN COUNTDOWN TIMER
+  useEffect(() => {
+    if (!gameState.gameStarted || moving || isReturning || gameState.winner) {
+      return;
+    }
+
+    setTurnSecondsLeft(15);
+    const interval = setInterval(() => {
+      setTurnSecondsLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        if (prev === 4) {
+          playTimerWarningSound(soundEnabled);
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState.gameStarted, gameState.turnIndex, moving, isReturning, gameState.winner, soundEnabled]);
+
+  // Turn Timeout Auto-Pass / Auto-Roll Handler
+  useEffect(() => {
+    if (turnSecondsLeft === 0 && gameState.gameStarted && !moving && !isReturning && !gameState.winner) {
+      if (!gameState.diceRolled) {
+        handleRollDice();
+      } else {
+        const bestTokenId = getBestBotMove(gameState, currentPlayer, gameState.diceValue);
+        if (bestTokenId) {
+          handleTokenClick(currentPlayer, bestTokenId);
+        }
+      }
+    }
+  }, [turnSecondsLeft]);
+
+  // SMART AI BOT PLAY ENGINE
+  useEffect(() => {
+    if (!gameState.gameStarted || moving || isReturning || gameState.winner) return;
+
+    const isCurrentBot = gameState.isBot && gameState.isBot[currentPlayer];
+    if (isCurrentBot) {
+      if (!gameState.diceRolled) {
+        const timer = setTimeout(() => {
+          handleRollDice();
+        }, 650);
+        return () => clearTimeout(timer);
+      } else {
+        const bestTokenId = getBestBotMove(gameState, currentPlayer, gameState.diceValue);
+        if (bestTokenId) {
+          const timer = setTimeout(() => {
+            handleTokenClick(currentPlayer, bestTokenId);
+          }, 550);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [gameState.gameStarted, gameState.turnIndex, gameState.diceRolled, gameState.isBot, moving, isReturning, gameState.winner]);
+
+  // Play victory audio when winner declared
+  useEffect(() => {
+    if (gameState.winner) {
+      playVictorySound(soundEnabled);
+      // Save stats to LocalStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('ludo_match_stats') || '{"matchesPlayed":0,"matchesWon":0,"tokensCaptured":0,"sixesRolled":0}');
+        const updated = {
+          ...saved,
+          matchesPlayed: saved.matchesPlayed + 1,
+          matchesWon: gameState.winner === COLORS.RED ? saved.matchesWon + 1 : saved.matchesWon
+        };
+        localStorage.setItem('ludo_match_stats', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update match stats', e);
+      }
+    }
+  }, [gameState.winner]);
+
   const handleRollDice = () => {
-    const currentPlayer = gameState.players[gameState.turnIndex];
     if (moving || isReturning) return;
     if (gameState.isOnline) {
       if (currentPlayer !== gameState.myColor) return;
     }
     const value = Math.floor(Math.random() * 6) + 1;
+    if (value === 6) {
+      playSixRollSound(soundEnabled);
+    }
     dispatchNetworkAction({ type: 'ROLL_DICE', payload: { value } });
   };
 
   const handleTokenClick = (color, tokenId) => {
-    const isReturning = Object.values(gameState.tokens).some(tokens => tokens.some(t => t.isReturning));
     if (moving || isReturning) return;
 
-    const currentPlayer = gameState.players[gameState.turnIndex];
-    
     if (gameState.isOnline) {
       if (color !== gameState.myColor || currentPlayer !== gameState.myColor) return;
     }
@@ -112,10 +208,15 @@ function App() {
     } else {
       if (token.position + diceValue > 56) return; // Invalid move
 
+      // Home entry rule check
+      if (gameState.requireKill && !gameState.hasKilled?.[color] && (token.position + diceValue > 50)) {
+        return; // Home entry blocked until at least 1 kill
+      }
+
       setMoving(true);
       let stepsTaken = 0;
 
-      const stepSpeed = fastMode ? 150 : 350;
+      const stepSpeed = fastMode ? 120 : 280;
       const interval = setInterval(() => {
         stepsTaken++;
         dispatchNetworkAction({ type: 'STEP_TOKEN', payload: { color, tokenId } });
@@ -129,9 +230,6 @@ function App() {
       }, stepSpeed);
     }
   };
-
-  const currentPlayer = gameState.players[gameState.turnIndex];
-  const isReturning = Object.values(gameState.tokens).some(tokens => tokens.some(t => t.isReturning));
 
   React.useEffect(() => {
     if (isReturning) {
@@ -323,6 +421,10 @@ function App() {
         onStartLobbyGame={handleStartLobbyGame}
         localNames={localNames}
         setLocalNames={setLocalNames}
+        isBotMap={isBotMap}
+        setIsBotMap={setIsBotMap}
+        requireKill={requireKill}
+        setRequireKill={setRequireKill}
         onStartLocalGame={handleStartLocalGame}
         isConnected={isConnected}
       />
@@ -399,6 +501,8 @@ function App() {
                 color={COLORS.RED} 
                 isActive={currentPlayer === COLORS.RED} 
                 isWinner={gameState.winner === COLORS.RED || (Array.isArray(gameState.winners) && gameState.winners.includes(COLORS.RED))}
+                isBot={gameState.isBot?.[COLORS.RED]}
+                turnSecondsLeft={turnSecondsLeft}
                 name={gameState.playerNames[COLORS.RED] || 'Player 1'} 
                 side="left"
                 mobileSide="top"
@@ -409,6 +513,8 @@ function App() {
                 color={COLORS.BLUE} 
                 isActive={currentPlayer === COLORS.BLUE} 
                 isWinner={gameState.winner === COLORS.BLUE || (Array.isArray(gameState.winners) && gameState.winners.includes(COLORS.BLUE))}
+                isBot={gameState.isBot?.[COLORS.BLUE]}
+                turnSecondsLeft={turnSecondsLeft}
                 name={gameState.playerNames[COLORS.BLUE] || 'Player 4'} 
                 side="left"
                 mobileSide="bottom"
@@ -418,7 +524,7 @@ function App() {
           
           {/* Center Column (Ludo Board) */}
           <div className="board-center-wrapper">
-            <div className="board-outer-frame">
+            <div className={`board-outer-frame theme-${boardTheme}`}>
               <Board gameState={gameState} onTokenClick={handleTokenClick} />
             </div>
           </div>
@@ -430,6 +536,8 @@ function App() {
                 color={COLORS.GREEN} 
                 isActive={currentPlayer === COLORS.GREEN} 
                 isWinner={gameState.winner === COLORS.GREEN || (Array.isArray(gameState.winners) && gameState.winners.includes(COLORS.GREEN))}
+                isBot={gameState.isBot?.[COLORS.GREEN]}
+                turnSecondsLeft={turnSecondsLeft}
                 name={gameState.playerNames[COLORS.GREEN] || 'Player 3'} 
                 side="right"
                 mobileSide="top"
@@ -440,6 +548,8 @@ function App() {
                 color={COLORS.YELLOW} 
                 isActive={currentPlayer === COLORS.YELLOW} 
                 isWinner={gameState.winner === COLORS.YELLOW || (Array.isArray(gameState.winners) && gameState.winners.includes(COLORS.YELLOW))}
+                isBot={gameState.isBot?.[COLORS.YELLOW]}
+                turnSecondsLeft={turnSecondsLeft}
                 name={gameState.playerNames[COLORS.YELLOW] || 'Player 2'} 
                 side="right"
                 mobileSide="bottom"
@@ -494,6 +604,16 @@ function App() {
           {/* Right Bottom Icons */}
           <div className="bottom-right-tools">
             <div className="tool-btn-group">
+              <button 
+                className="circular-tool-btn" 
+                onClick={() => setBoardTheme(prev => prev === 'neon' ? 'wooden' : prev === 'wooden' ? 'royal' : 'neon')}
+                title="Switch Board Theme"
+              >
+                <Palette size={18} />
+              </button>
+              <span className="tool-label" style={{ textTransform: 'capitalize' }}>{boardTheme}</span>
+            </div>
+            <div className="tool-btn-group">
               <button className="circular-tool-btn" onClick={() => setActiveModal('friends')}>
                 <Users size={18} />
               </button>
@@ -506,7 +626,7 @@ function App() {
               >
                 {voiceActive ? <Mic size={18} /> : <MicOff size={18} />}
               </button>
-              <span className="tool-label">Voice Chat</span>
+              <span className="tool-label">Voice</span>
             </div>
           </div>
         </footer>

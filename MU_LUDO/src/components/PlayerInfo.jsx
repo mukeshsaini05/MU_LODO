@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Trophy, Heart, Hourglass, Crown } from 'lucide-react';
+import { User, Trophy, Heart, Hourglass, Crown, Bot } from 'lucide-react';
 
-const PlayerInfo = ({ color = 'red', isActive, isWinner, name = 'Player', side = 'left', mobileSide = 'top' }) => {
+const PlayerInfo = ({ color = 'red', isActive, isWinner, isBot = false, turnSecondsLeft = 15, name = 'Player', side = 'left', mobileSide = 'top' }) => {
   const playerColor = color || 'red';
   
   const getHeartsColor = () => {
@@ -15,14 +15,15 @@ const PlayerInfo = ({ color = 'red', isActive, isWinner, name = 'Player', side =
   };
 
   const heartColor = getHeartsColor();
-  const capitalizedColor = playerColor ? playerColor.charAt(0).toUpperCase() + playerColor.slice(1) : 'Red';
 
   return (
     <div className={`player-card-ref ${playerColor} ${isActive ? 'active-turn' : ''} ${isWinner ? 'winner' : ''}`}>
-      {/* Active turn badge matching player color */}
+      {/* Active turn badge with countdown timer */}
       {isActive && (
-        <div className={`turn-badge badge-${playerColor}`}>
-          <Crown size={11} className="crown-badge-icon" /> TURN
+        <div className={`turn-badge badge-${playerColor}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <Crown size={11} className="crown-badge-icon" />
+          <span>TURN</span>
+          <span style={{ fontSize: '0.7rem', opacity: 0.9, marginLeft: '0.2rem', fontWeight: 800 }}>⏱️{turnSecondsLeft}s</span>
         </div>
       )}
 
@@ -33,10 +34,13 @@ const PlayerInfo = ({ color = 'red', isActive, isWinner, name = 'Player', side =
 
       <div className="card-top-row">
         <div className={`card-avatar avatar-${playerColor}`}>
-          <User size={24} />
+          {isBot ? <Bot size={24} /> : <User size={24} />}
         </div>
         <div className="card-user-info">
-          <h4 className="card-player-name">{name}</h4>
+          <h4 className="card-player-name" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            {name}
+            {isBot && <span style={{ fontSize: '0.6rem', background: '#3b82f6', color: '#fff', padding: '0.1rem 0.3rem', borderRadius: '4px', fontWeight: 800 }}>BOT</span>}
+          </h4>
           <div className="card-hearts-row">
             {[...Array(4)].map((_, i) => (
               <Heart key={i} size={13} fill={heartColor} color={heartColor} className="heart-icon" />
@@ -64,3 +68,4 @@ const PlayerInfo = ({ color = 'red', isActive, isWinner, name = 'Player', side =
 };
 
 export default PlayerInfo;
+

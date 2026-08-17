@@ -38,12 +38,37 @@ export function ModalWrapper({ title, onClose, children, icon: Icon }) {
   );
 }
 
+import StatsModal from './StatsModal';
+export { StatsModal };
+
 // Local Player Setup Modal
-export function LocalSetupModal({ playerCount, localNames, setLocalNames, onStart, onClose }) {
+export function LocalSetupModal({ 
+  playerCount, 
+  localNames, 
+  setLocalNames, 
+  isBotMap, 
+  setIsBotMap,
+  requireKill,
+  setRequireKill,
+  onStart, 
+  onClose 
+}) {
+  const toggleBot = (color) => {
+    if (!isBotMap || !setIsBotMap) return;
+    const newIsBot = !isBotMap[color];
+    setIsBotMap({ ...isBotMap, [color]: newIsBot });
+    if (newIsBot) {
+      setLocalNames({ ...localNames, [color]: `Bot ${color.toUpperCase()}` });
+    } else {
+      setLocalNames({ ...localNames, [color]: `Player ${color === COLORS.RED ? 1 : color === COLORS.YELLOW ? 2 : color === COLORS.GREEN ? 3 : 4}` });
+    }
+  };
+
   return (
     <ModalWrapper title={`Setup ${playerCount} Player Game`} onClose={onClose} icon={Users}>
       <div className="setup-modal-content">
-        <p className="modal-subtitle">Customize player names before rolling the dice!</p>
+        <p className="modal-subtitle">Configure Players & Custom Rules!</p>
+
         <div className="player-input-list">
           <div className="player-input-row red-border">
             <span className="color-badge red-bg">P1</span>
@@ -53,6 +78,7 @@ export function LocalSetupModal({ playerCount, localNames, setLocalNames, onStar
               onChange={(e) => setLocalNames({ ...localNames, [COLORS.RED]: e.target.value })}
               placeholder="Player 1 Name (Red)"
             />
+            <span className="human-pill-tag">HUMAN</span>
           </div>
 
           <div className="player-input-row yellow-border">
@@ -63,6 +89,15 @@ export function LocalSetupModal({ playerCount, localNames, setLocalNames, onStar
               onChange={(e) => setLocalNames({ ...localNames, [COLORS.YELLOW]: e.target.value })}
               placeholder="Player 2 Name (Yellow)"
             />
+            {setIsBotMap && (
+              <button 
+                type="button"
+                className={`bot-toggle-btn ${isBotMap[COLORS.YELLOW] ? 'active-bot' : ''}`}
+                onClick={() => toggleBot(COLORS.YELLOW)}
+              >
+                {isBotMap[COLORS.YELLOW] ? '🤖 BOT' : '👤 HUMAN'}
+              </button>
+            )}
           </div>
 
           {playerCount >= 3 && (
@@ -74,6 +109,15 @@ export function LocalSetupModal({ playerCount, localNames, setLocalNames, onStar
                 onChange={(e) => setLocalNames({ ...localNames, [COLORS.GREEN]: e.target.value })}
                 placeholder="Player 3 Name (Green)"
               />
+              {setIsBotMap && (
+                <button 
+                  type="button"
+                  className={`bot-toggle-btn ${isBotMap[COLORS.GREEN] ? 'active-bot' : ''}`}
+                  onClick={() => toggleBot(COLORS.GREEN)}
+                >
+                  {isBotMap[COLORS.GREEN] ? '🤖 BOT' : '👤 HUMAN'}
+                </button>
+              )}
             </div>
           )}
 
@@ -86,13 +130,48 @@ export function LocalSetupModal({ playerCount, localNames, setLocalNames, onStar
                 onChange={(e) => setLocalNames({ ...localNames, [COLORS.BLUE]: e.target.value })}
                 placeholder="Player 4 Name (Blue)"
               />
+              {setIsBotMap && (
+                <button 
+                  type="button"
+                  className={`bot-toggle-btn ${isBotMap[COLORS.BLUE] ? 'active-bot' : ''}`}
+                  onClick={() => toggleBot(COLORS.BLUE)}
+                >
+                  {isBotMap[COLORS.BLUE] ? '🤖 BOT' : '👤 HUMAN'}
+                </button>
+              )}
             </div>
           )}
         </div>
 
+        {/* Custom Rule Toggle */}
+        {setRequireKill && (
+          <div className="rule-toggle-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', margin: '0.8rem 0' }}>
+            <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+              🎯 Must Cut 1 Token Before Home Entry
+            </span>
+            <button 
+              type="button"
+              className={`rule-toggle-switch ${requireKill ? 'on' : 'off'}`}
+              onClick={() => setRequireKill(!requireKill)}
+              style={{
+                background: requireKill ? '#22c55e' : '#475569',
+                color: '#fff',
+                border: 'none',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '20px',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer'
+              }}
+            >
+              {requireKill ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        )}
+
         <button className="primary-action-btn green-glow start-game-btn" onClick={onStart}>
           <Play size={20} />
-          Start Local Match
+          Start Match
         </button>
       </div>
     </ModalWrapper>
@@ -145,7 +224,7 @@ export function HostRoomModal({ roomCode, guestCount, isConnecting, peerError, o
           <div className="player-slots-grid">
             <div className="slot-card filled red-slot">
               <div className="slot-avatar">👑</div>
-              <span>Host (You)</span>
+              <span>{localStorage.getItem('mu_ludo_username') || 'Host'} (Host)</span>
             </div>
             {Array.from({ length: 3 }).map((_, idx) => (
               <div key={idx} className={`slot-card ${idx < guestCount ? 'filled green-slot' : 'empty'}`}>
@@ -188,7 +267,7 @@ export function JoinRoomModal({ myOnlineName, setMyOnlineName, joinCode, setJoin
               type="text"
               value={myOnlineName}
               onChange={(e) => setMyOnlineName(e.target.value)}
-              placeholder="e.g. Mukesh"
+              placeholder="e.g. Player 1"
               maxLength={15}
               disabled={isConnecting || isConnected}
             />
@@ -233,13 +312,14 @@ export function JoinRoomModal({ myOnlineName, setMyOnlineName, joinCode, setJoin
 // Leaderboard Modal
 export function LeaderboardModal({ onClose }) {
   const [tab, setTab] = React.useState('global');
+  const storedUser = localStorage.getItem('mu_ludo_username') || 'Player 1';
 
   const leaderData = [
     { rank: 1, name: 'KingLudo_99', level: 42, winRate: '78%', wins: 1420, score: '45,200', avatar: '👑' },
     { rank: 2, name: 'Raj_7', level: 38, winRate: '74%', wins: 1180, score: '38,900', avatar: '😎' },
     { rank: 3, name: 'AmanKing', level: 35, winRate: '71%', wins: 950, score: '31,400', avatar: '🔥' },
     { rank: 4, name: 'Queen_Riya', level: 31, winRate: '68%', wins: 870, score: '28,100', avatar: '👸' },
-    { rank: 5, name: 'Mukesh (You)', level: 15, winRate: '65%', wins: 250, score: '12,500', avatar: '👑', isUser: true },
+    { rank: 5, name: `${storedUser} (You)`, level: 15, winRate: '65%', wins: 250, score: '12,500', avatar: '👑', isUser: true },
     { rank: 6, name: 'ShadowGamer', level: 28, winRate: '61%', wins: 620, score: '21,300', avatar: '⚡' },
     { rank: 7, name: 'MasterPro', level: 25, winRate: '59%', wins: 540, score: '18,700', avatar: '🎯' },
   ];
@@ -290,26 +370,26 @@ export function ShopModal({ onClose }) {
     <ModalWrapper title="MU_LUDO Store" onClose={onClose} icon={ShoppingBag}>
       <div className="shop-modal-content">
         <div className="shop-section">
-          <h3>🪙 Coin Bundles</h3>
+          <h3>🪙 Coin & Gem Bundles</h3>
           <div className="shop-grid">
             <div className="shop-card">
               <div className="shop-icon-box gold-glow">💰</div>
               <h4>5,000 Coins</h4>
               <p className="shop-desc">Starter Coin Pack</p>
-              <button className="buy-btn yellow-btn">₹49</button>
+              <button className="buy-btn yellow-btn">💳 ₹49</button>
             </div>
             <div className="shop-card featured">
               <div className="badge-tag">POPULAR</div>
               <div className="shop-icon-box gold-glow">🏆</div>
               <h4>25,000 Coins</h4>
               <p className="shop-desc">+2,500 Bonus Coins!</p>
-              <button className="buy-btn yellow-btn">₹199</button>
+              <button className="buy-btn yellow-btn">💳 ₹199</button>
             </div>
             <div className="shop-card">
               <div className="shop-icon-box purple-glow">💎</div>
               <h4>500 Gems</h4>
               <p className="shop-desc">Premium Gem Pack</p>
-              <button className="buy-btn purple-btn">₹299</button>
+              <button className="buy-btn purple-btn">💳 ₹299</button>
             </div>
           </div>
         </div>
@@ -321,13 +401,13 @@ export function ShopModal({ onClose }) {
               <div className="theme-preview neon-theme"></div>
               <h4>Cyber Neon Board</h4>
               <p className="shop-desc">Futuristic glowing aesthetics</p>
-              <button className="buy-btn blue-btn">100 Gems</button>
+              <button className="buy-btn blue-btn">💎 100 Gems</button>
             </div>
             <div className="shop-card">
               <div className="theme-preview royal-theme"></div>
               <h4>Royal Gold Board</h4>
               <p className="shop-desc">Luxury golden finish</p>
-              <button className="buy-btn yellow-btn">2,500 Coins</button>
+              <button className="buy-btn yellow-btn">🪙 2,500 Coins</button>
             </div>
           </div>
         </div>
@@ -433,7 +513,8 @@ export function SettingsModal({ onClose }) {
 // Invite & Earn Modal
 export function InviteEarnModal({ onClose }) {
   const [copied, setCopied] = React.useState(false);
-  const referralLink = "https://muludo.app/invite?ref=MUKESH15";
+  const storedUser = (localStorage.getItem('mu_ludo_username') || 'PLAYER').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const referralLink = `https://muludo.app/invite?ref=${storedUser}100`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink);
@@ -452,13 +533,13 @@ export function InviteEarnModal({ onClose }) {
 
         <div className="referral-box">
           <span className="code-label">YOUR REFERRAL LINK</span>
-          <div className="code-display">
-            <input type="text" readOnly value={referralLink} />
-            <button className="copy-code-btn" onClick={copyLink}>
+          <div className="referral-link-display">
+            <input type="text" readOnly value={referralLink} className="referral-input" />
+            <button className="copy-referral-btn" onClick={copyLink}>
               {copied ? <Check size={18} className="success-icon" /> : <Copy size={18} />}
             </button>
           </div>
-          {copied && <span className="copied-toast">Referral link copied!</span>}
+          {copied && <span className="copied-toast">Referral link copied to clipboard!</span>}
         </div>
       </div>
     </ModalWrapper>

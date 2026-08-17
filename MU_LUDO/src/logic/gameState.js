@@ -1,4 +1,4 @@
-import { COLORS, START_POSITIONS, COLOR_PATHS, SAFE_ZONES } from './constants';
+import { COLORS, COLOR_PATHS, SAFE_ZONES } from './constants';
 
 export const INITIAL_STATE = {
   gameStarted: false,
@@ -8,11 +8,24 @@ export const INITIAL_STATE = {
   peerError: null,
   players: [COLORS.RED, COLORS.GREEN, COLORS.YELLOW, COLORS.BLUE],
   playerNames: {
-    [COLORS.RED]: 'Player red',
-    [COLORS.GREEN]: 'Player green',
-    [COLORS.YELLOW]: 'Player yellow',
-    [COLORS.BLUE]: 'Player blue'
+    [COLORS.RED]: 'Player 1',
+    [COLORS.GREEN]: 'Player 3',
+    [COLORS.YELLOW]: 'Player 2',
+    [COLORS.BLUE]: 'Player 4'
   },
+  isBot: {
+    [COLORS.RED]: false,
+    [COLORS.GREEN]: false,
+    [COLORS.YELLOW]: false,
+    [COLORS.BLUE]: false
+  },
+  hasKilled: {
+    [COLORS.RED]: false,
+    [COLORS.GREEN]: false,
+    [COLORS.YELLOW]: false,
+    [COLORS.BLUE]: false
+  },
+  requireKill: false,
   turnIndex: 0,
   diceValue: null,
   diceRolled: false,
@@ -43,7 +56,7 @@ export const INITIAL_STATE = {
       { id: 'b4', position: -1, isHome: false, isReturning: false }
     ]
   },
-  logs: ['Player 1\'s turn.']
+  logs: ['Match started. Roll the dice!']
 };
 
 export const gameReducer = (state, action) => {
@@ -66,6 +79,8 @@ export const gameReducer = (state, action) => {
         isOnline: false,
         players: activePlayers,
         playerNames: action.payload.playerNames || INITIAL_STATE.playerNames,
+        isBot: action.payload.isBot || INITIAL_STATE.isBot,
+        requireKill: !!action.payload.requireKill,
         logs: [`${p1Name}'s turn.`],
       };
     }
@@ -113,16 +128,18 @@ export const gameReducer = (state, action) => {
       let hasValidMove = false;
       for (const token of tokens) {
         if (!token.isHome) {
+          const targetPos = token.position === -1 ? 0 : token.position + value;
+          const isHomeEntryAllowed = !state.requireKill || state.hasKilled[currentPlayer] || targetPos <= 50;
+
           if (token.position === -1 && value === 6) {
             hasValidMove = true;
-          } else if (token.position !== -1 && token.position + value <= 56) {
+          } else if (token.position !== -1 && targetPos <= 56 && isHomeEntryAllowed) {
             hasValidMove = true;
           }
         }
       }
 
       if (!hasValidMove) {
-        // Next turn immediately without 'no valid moves' log clutter
         const nextTurn = (state.turnIndex + 1) % state.players.length;
         const nextPlayer = state.players[nextTurn];
         const nextName = state.playerNames[nextPlayer] || nextPlayer;
@@ -131,7 +148,7 @@ export const gameReducer = (state, action) => {
           diceValue: value,
           diceRolled: false,
           turnIndex: nextTurn,
-          logs: [...state.logs, `${nextName}'s turn.`]
+          logs: [...state.logs, `${currentPlayer} rolled a ${value}. No valid move!`, `${nextName}'s turn.`]
         };
       }
 
@@ -139,7 +156,7 @@ export const gameReducer = (state, action) => {
         ...state,
         diceValue: value,
         diceRolled: true,
-        logs: [...state.logs, `${currentPlayer} rolled a ${value}.`]
+        logs: [...state.logs, `${state.playerNames[currentPlayer] || currentPlayer} rolled a ${value}.`]
       };
     }
     case 'MOVE_OUT_OF_HOME': {
@@ -189,6 +206,7 @@ export const gameReducer = (state, action) => {
       let nextTurnIndex = state.turnIndex;
       let logs = [...state.logs];
       let newTokens = { ...state.tokens };
+      let newHasKilled = { ...state.hasKilled };
       let captured = false;
 
       if (action.payload) {
@@ -197,7 +215,6 @@ export const gameReducer = (state, action) => {
         
         if (currentToken && currentToken.position >= 0 && !currentToken.isHome) {
           const currentCell = COLOR_PATHS[color][currentToken.position];
-          
           const isSafeZone = SAFE_ZONES.some(zone => zone.x === currentCell.x && zone.y === currentCell.y);
           
           if (!isSafeZone) {
@@ -214,16 +231,33 @@ export const gameReducer = (state, action) => {
                       otherTokens[i] = { ...otherToken, isReturning: true };
                       colorCaptured = true;
                       captured = true;
-                      logs.push(`${color} captured ${otherColor}'s token!`);
+                      logs.push(`💥 ${state.playerNames[color] || color} captured ${state.playerNames[otherColor] || otherColor}'s token!`);
                     }
                   }
                 }
                 if (colorCaptured) {
                   newTokens[otherColor] = otherTokens;
+                  newHasKilled[color] = true;
                 }
               }
             }
           }
+        }
+
+        // Check Victory
+        const colorTokens = newTokens[color] || [];
+        const allHome = colorTokens.length > 0 && colorTokens.every(t => t.isHome);
+        if (allHome) {
+          logs.push(`🎉 ${state.playerNames[color] || color} WON THE GAME!`);
+          return {
+            ...state,
+            tokens: newTokens,
+            hasKilled: newHasKilled,
+            logs: logs,
+            diceRolled: false,
+            diceValue: null,
+            winner: color
+          };
         }
       }
 
@@ -234,6 +268,7 @@ export const gameReducer = (state, action) => {
       return {
         ...state,
         tokens: newTokens,
+        hasKilled: newHasKilled,
         logs: logs,
         diceRolled: false,
         diceValue: null,

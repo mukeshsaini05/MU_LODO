@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
   Home, Trophy, Users, ShoppingBag, Award, Gift, Settings, Headphones, 
-  Plus, Key, Zap, Globe, Coins, Gem, Bell, ChevronRight, Crown, MessageSquare, Menu, X, MoreHorizontal
+  Plus, Key, Zap, Globe, Coins, Gem, Bell, ChevronRight, Crown, MessageSquare, Menu, X, MoreHorizontal, BarChart2, Download, Smartphone
 } from 'lucide-react';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import {
   LocalSetupModal, HostRoomModal, JoinRoomModal, LeaderboardModal, 
-  ShopModal, DailyRewardModal, SettingsModal, InviteEarnModal, LoginModal 
+  ShopModal, DailyRewardModal, SettingsModal, InviteEarnModal, LoginModal, StatsModal 
 } from './Modals';
 
 // Custom SVG 3D Graphics for Visual Fidelity
@@ -184,10 +185,15 @@ export default function Dashboard({
   onStartLobbyGame,
   localNames,
   setLocalNames,
+  isBotMap,
+  setIsBotMap,
+  requireKill,
+  setRequireKill,
   onStartLocalGame,
   isConnected
 }) {
   // State variables
+  const { isInstallable, isInstalled, triggerInstall } = usePWAInstall();
   const [activeTab, setActiveTab] = useState('home');
   const [activeModal, setActiveModal] = useState(null);
   const [selectedLocalCount, setSelectedLocalCount] = useState(null);
@@ -293,6 +299,11 @@ export default function Dashboard({
             <Headphones size={18} />
             <span>Support</span>
           </button>
+
+          <button className={`nav-item pwa-nav-btn ${isInstalled ? 'installed' : ''}`} onClick={() => { triggerInstall(); setIsMobileMenuOpen(false); }}>
+            <Download size={18} className="pwa-install-icon" />
+            <span>{isInstalled ? 'App Installed' : 'Install App'}</span>
+          </button>
         </nav>
 
         {/* SIDEBAR BOTTOM DAILY REWARD CARD */}
@@ -339,6 +350,11 @@ export default function Dashboard({
 
           {/* RIGHT SIDE STATS & ACTIONS */}
           <div className="topbar-actions">
+            <button className={`top-icon-btn pwa-install-topbar-btn ${isInstalled ? 'installed' : ''}`} title="Install MU LUDO App" onClick={triggerInstall}>
+              <Download size={18} />
+              <span className="pwa-badge">APP</span>
+            </button>
+
             <div className="stat-pill coin-pill" onClick={() => setActiveModal('shop')}>
               <div className="stat-icon-wrapper yellow-glow">
                 <Coins size={16} />
@@ -733,6 +749,10 @@ export default function Dashboard({
           playerCount={selectedLocalCount}
           localNames={localNames}
           setLocalNames={setLocalNames}
+          isBotMap={isBotMap}
+          setIsBotMap={setIsBotMap}
+          requireKill={requireKill}
+          setRequireKill={setRequireKill}
           onStart={() => {
             onSelectLocalPlayers(selectedLocalCount);
             onStartLocalGame(selectedLocalCount);
@@ -741,6 +761,8 @@ export default function Dashboard({
           onClose={closeModal}
         />
       )}
+
+      {activeModal === 'stats' && <StatsModal onClose={closeModal} />}
 
       {activeModal === 'host_room' && (
         <HostRoomModal
