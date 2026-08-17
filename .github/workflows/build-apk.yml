@@ -13,29 +13,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: 'zulu'
+          java-version: '21'
 
-      - name: Setup Node 20
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Verify Directories
-        run: |
-          pwd
-          ls -la
-          ls -la MU_LUDO
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Install NPM Dependencies
         run: |
           cd MU_LUDO
-          npm install --legacy-peer-deps --no-audit
+          npm install --legacy-peer-deps
 
-      - name: Build React Production Bundle
+      - name: Build Web App
         run: |
           cd MU_LUDO
           npm run build
@@ -49,7 +46,7 @@ jobs:
         run: |
           cd MU_LUDO/android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
