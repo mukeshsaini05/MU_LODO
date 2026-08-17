@@ -8,39 +8,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./MU_LUDO
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK 21
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install Dependencies
+        working-directory: ./MU_LUDO
         run: npm install
 
       - name: Build Web App
+        working-directory: ./MU_LUDO
         run: npm run build
 
-      - name: Sync Capacitor
+      - name: Sync Capacitor Android
+        working-directory: ./MU_LUDO
         run: npx cap sync android
 
       - name: Build Android APK
+        working-directory: ./MU_LUDO/android
         run: |
-          cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
