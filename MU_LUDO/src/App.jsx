@@ -365,7 +365,12 @@ function App() {
   const handleStartLocalGame = (count) => {
     dispatch({ 
       type: 'START_GAME', 
-      payload: { playerCount: count, playerNames: localNames } 
+      payload: { 
+        playerCount: count, 
+        playerNames: localNames,
+        isBot: isBotMap,
+        requireKill
+      } 
     });
   };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Copy, Check, Trophy, ShoppingBag, Gift, Volume2, VolumeX, Sparkles, Share2, Users, Shield, Award, Key, Play, User, MessageSquare } from 'lucide-react';
+import { X, Copy, Check, Trophy, ShoppingBag, Gift, Volume2, VolumeX, Sparkles, Share2, Users, Shield, Award, Key, Play, User, MessageSquare, Bot, Cpu } from 'lucide-react';
 import { COLORS } from '../logic/constants';
 
 // Modal Container Wrapper
@@ -172,6 +172,156 @@ export function LocalSetupModal({
         <button className="primary-action-btn green-glow start-game-btn" onClick={onStart}>
           <Play size={20} />
           Start Match
+        </button>
+      </div>
+    </ModalWrapper>
+  );
+}
+
+// VS Computer Setup Modal (Play vs Computer Bot like Ludo King)
+export function VsComputerModal({ 
+  localNames, 
+  setLocalNames, 
+  isBotMap, 
+  setIsBotMap,
+  requireKill,
+  setRequireKill,
+  onStart, 
+  onClose 
+}) {
+  const [selectedMode, setSelectedMode] = React.useState(2); // 2 or 4 players
+
+  const handleStartVsComputer = () => {
+    const userPlayerName = localNames[COLORS.RED] || 'Player 1';
+    
+    if (selectedMode === 2) {
+      setIsBotMap({
+        [COLORS.RED]: false,
+        [COLORS.YELLOW]: true,
+        [COLORS.GREEN]: false,
+        [COLORS.BLUE]: false
+      });
+      setLocalNames({
+        ...localNames,
+        [COLORS.RED]: userPlayerName,
+        [COLORS.YELLOW]: '🤖 Computer Bot'
+      });
+    } else {
+      setIsBotMap({
+        [COLORS.RED]: false,
+        [COLORS.YELLOW]: true,
+        [COLORS.GREEN]: true,
+        [COLORS.BLUE]: true
+      });
+      setLocalNames({
+        ...localNames,
+        [COLORS.RED]: userPlayerName,
+        [COLORS.YELLOW]: '🤖 Bot 1',
+        [COLORS.GREEN]: '🤖 Bot 2',
+        [COLORS.BLUE]: '🤖 Bot 3'
+      });
+    }
+
+    onStart(selectedMode);
+  };
+
+  return (
+    <ModalWrapper title="Play VS Computer (Bot Mode)" onClose={onClose} icon={Bot}>
+      <div className="setup-modal-content">
+        <p className="modal-subtitle">Play offline against Smart AI Bots like Ludo King!</p>
+
+        {/* Mode Selector (2 Players vs 4 Players) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', margin: '1rem 0' }}>
+          <button 
+            type="button"
+            className={`vs-comp-mode-card ${selectedMode === 2 ? 'active' : ''}`}
+            onClick={() => setSelectedMode(2)}
+            style={{
+              padding: '1rem',
+              borderRadius: '14px',
+              border: selectedMode === 2 ? '2px solid #22c55e' : '1px solid rgba(255,255,255,0.1)',
+              background: selectedMode === 2 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontWeight: 700
+            }}
+          >
+            <span style={{ fontSize: '1.4rem' }}>👤 vs 🤖</span>
+            <span>2 PLAYERS</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>You vs 1 Bot</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`vs-comp-mode-card ${selectedMode === 4 ? 'active' : ''}`}
+            onClick={() => setSelectedMode(4)}
+            style={{
+              padding: '1rem',
+              borderRadius: '14px',
+              border: selectedMode === 4 ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.1)',
+              background: selectedMode === 4 ? 'rgba(168, 85, 247, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontWeight: 700
+            }}
+          >
+            <span style={{ fontSize: '1.4rem' }}>👤 vs 🤖🤖🤖</span>
+            <span>4 PLAYERS</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>You vs 3 Bots</span>
+          </button>
+        </div>
+
+        {/* Player Name Input */}
+        <div className="player-input-list">
+          <div className="player-input-row red-border">
+            <span className="color-badge red-bg">YOU</span>
+            <input
+              type="text"
+              value={localNames[COLORS.RED] || ''}
+              onChange={(e) => setLocalNames({ ...localNames, [COLORS.RED]: e.target.value })}
+              placeholder="Enter Your Name"
+            />
+            <span className="human-pill-tag">HUMAN</span>
+          </div>
+        </div>
+
+        {/* Custom Rule Toggle */}
+        {setRequireKill && (
+          <div className="rule-toggle-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', margin: '0.8rem 0' }}>
+            <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600 }}>
+              🎯 Must Cut 1 Token Before Home Entry
+            </span>
+            <button 
+              type="button"
+              className={`rule-toggle-switch ${requireKill ? 'on' : 'off'}`}
+              onClick={() => setRequireKill(!requireKill)}
+              style={{
+                background: requireKill ? '#22c55e' : '#475569',
+                color: '#fff',
+                border: 'none',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '20px',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer'
+              }}
+            >
+              {requireKill ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        )}
+
+        <button className="primary-action-btn purple-glow start-game-btn" onClick={handleStartVsComputer}>
+          <Bot size={20} />
+          START VS COMPUTER
         </button>
       </div>
     </ModalWrapper>

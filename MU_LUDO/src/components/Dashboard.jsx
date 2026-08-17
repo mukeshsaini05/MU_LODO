@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Home, Trophy, Users, ShoppingBag, Award, Gift, Settings, Headphones, 
-  Plus, Key, Zap, Globe, Coins, Gem, Bell, ChevronRight, Crown, MessageSquare, Menu, X, MoreHorizontal, BarChart2, Download, Smartphone
+  Plus, Key, Zap, Globe, Coins, Gem, Bell, ChevronRight, Crown, MessageSquare, Menu, X, MoreHorizontal, BarChart2, Download, Smartphone, Bot
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import {
-  LocalSetupModal, HostRoomModal, JoinRoomModal, LeaderboardModal, 
+  LocalSetupModal, VsComputerModal, HostRoomModal, JoinRoomModal, LeaderboardModal, 
   ShopModal, DailyRewardModal, SettingsModal, InviteEarnModal, LoginModal, StatsModal 
 } from './Modals';
 
@@ -432,8 +432,18 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* MODE SELECTION CARDS ROW (Exact screenshot 2+1 layout) */}
+            {/* MODE SELECTION CARDS ROW (Vs Computer & Local Multiplayer) */}
             <div className="mode-cards-grid">
+              <div className="mode-card purple-mode vs-computer-card" onClick={() => setActiveModal('vs_computer')}>
+                <div className="user-icon-circle purple-circle-bg">
+                  <Bot size={26} color="#c084fc" />
+                </div>
+                <div className="mode-info">
+                  <h3>VS COMPUTER</h3>
+                  <p>Play Vs Computer Bots (Offline)</p>
+                </div>
+              </div>
+
               <div className="mode-card green-mode" onClick={() => handleModeClick(2)}>
                 <div className="user-icon-circle green-circle-bg">
                   <TwoPlayersIcon />
@@ -454,7 +464,7 @@ export default function Dashboard({
                 </div>
               </div>
 
-              <div className="mode-card orange-mode full-width-mobile-card" onClick={() => handleModeClick(4)}>
+              <div className="mode-card orange-mode" onClick={() => handleModeClick(4)}>
                 <div className="user-icon-circle orange-circle-bg">
                   <FourPlayersIcon />
                 </div>
@@ -743,7 +753,23 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* ACTIVE MODALS OVERLAY */}
+      {activeModal === 'vs_computer' && (
+        <VsComputerModal
+          localNames={localNames}
+          setLocalNames={setLocalNames}
+          isBotMap={isBotMap}
+          setIsBotMap={setIsBotMap}
+          requireKill={requireKill}
+          setRequireKill={setRequireKill}
+          onStart={(count) => {
+            onSelectLocalPlayers(count);
+            onStartLocalGame(count);
+            closeModal();
+          }}
+          onClose={closeModal}
+        />
+      )}
+
       {activeModal === 'local_setup' && selectedLocalCount && (
         <LocalSetupModal
           playerCount={selectedLocalCount}
