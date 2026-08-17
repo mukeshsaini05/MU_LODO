@@ -1,5 +1,9 @@
 {
   "appId": "com.muludo.app",
   "appName": "MU Ludo",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://mu-lodo.pages.dev",
+    "cleartext": true
+  }
 }
